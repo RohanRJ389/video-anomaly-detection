@@ -1,72 +1,68 @@
 import streamlit as st
 import cv2
+import os
 from anomaly_detection import discriminator  # Import the required function
-import time  # Import time module
-
-# Initialize the fire detection model (if required)
-fire_detector_state = True
+import time
 
 # Streamlit UI
 st.title("Video Anomaly Detection")
 
-# Upload video file
+# File uploader
 video_file = st.file_uploader("Upload a video file", type=["mp4", "avi"])
 
 if video_file:
-    # Save the video to a temporary location
+    # Save the video to a temporary file
     video_path = f"temp_{video_file.name}"
     with open(video_path, "wb") as f:
         f.write(video_file.read())
 
     # Load the video
     cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        st.error("Error loading video. Please try another file.")
+    else:
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        st.write(f"Total Frames: {frame_count}")
 
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    st.write(f"Total Frames: {frame_count}")
-    
-    frame_id = 0
-    progress_bar = st.progress(0)
+        # Initialize progress and placeholders
+        progress_bar = st.progress(0)
+        frame_placeholder = st.empty()
+        alert_placeholder = st.empty()
+        processing_placeholder = st.empty()
 
-    # Create placeholders for displaying frames, anomaly status, and processing time
-    frame_placeholder = st.empty()
-    alert_placeholder = st.empty()
-    processing_placeholder = st.empty()
+        frame_id = 0
+        frame_interval = 5  # Hardcoded frame interval
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        # Measure start time for processing
-        start_time = time.time()
+            start_time = time.time()
 
-        # Process every 5th frame for anomaly detection
-        if frame_id % 5 == 0:
-            prediction =  discriminator(frame, fire_detector_state)
-            if prediction == 1:
-                alert_placeholder.error(f"Frame {frame_id}: ALERT: Anomaly Detected!")
-            else:
-                alert_placeholder.success(f"Frame {frame_id}: No Anomaly Detected")
+            if frame_id % frame_interval == 0:
+                prediction = discriminator(frame, fire_detector_state=True)
+                if prediction == 1:
+                    alert_placeholder.error(f"Frame {frame_id}: ALERT: Anomaly Detected!")
+                else:
+                    alert_placeholder.success(f"Frame {frame_id}: No Anomaly Detected")
 
-        # Measure end time for processing
-        end_time = time.time()
-        processing_time = end_time - start_time
+            end_time = time.time()
+            processing_time = end_time - start_time
+            processing_placeholder.info(f"Processing time for Frame {frame_id}: {processing_time:.2f} seconds")
 
-        # Display processing time in the processing placeholder
-        processing_placeholder.info(f"Processing time for Frame {frame_id}: {processing_time:.2f} seconds")
+            # Convert frame to RGB and display
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, channels="RGB", caption=f"Frame {frame_id}")
 
-        # Convert frame to RGB for display
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Update the frame placeholder with the current frame
-        frame_placeholder.image(frame_rgb, channels="RGB", caption=f"Frame {frame_id}")
+            # Update progress bar
+            progress = int((frame_id / frame_count) * 100)
+            progress_bar.progress(progress)
 
-        # Update progress bar
-        progress = int((frame_id / frame_count) * 100)
-        progress_bar.progress(progress)
+            frame_id += 1
 
-        frame_id += 1
+        cap.release()
+        st.success("Video processing completed!")
 
-    cap.release()
-    st.success("Video processing completed!")
-
+        # Clean up temporary file
+        os.remove(video_path)
