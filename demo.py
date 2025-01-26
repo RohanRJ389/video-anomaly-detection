@@ -4,6 +4,10 @@ import os
 from anomaly_detection import discriminator  # Import the required function
 import time
 
+# Ensure the temporary folder exists
+TEMP_FOLDER = "temp_frames"
+os.makedirs(TEMP_FOLDER, exist_ok=True)
+
 # Streamlit UI
 st.title("Video Anomaly Detection")
 
@@ -32,6 +36,7 @@ if video_file:
 
         frame_id = 0
         frame_interval = 5  # Hardcoded frame interval
+        previous_frame_path = None
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -41,11 +46,21 @@ if video_file:
             start_time = time.time()
 
             if frame_id % frame_interval == 0:
+                # Save the current frame to the temporary folder
+                current_frame_path = os.path.join(TEMP_FOLDER, f"frame_{frame_id}.jpg")
+                cv2.imwrite(current_frame_path, frame)
+
+                # Process the frame
                 prediction = discriminator(frame, fire_detector_state=True)
                 if prediction == 1:
                     alert_placeholder.error(f"Frame {frame_id}: ALERT: Anomaly Detected!")
                 else:
                     alert_placeholder.success(f"Frame {frame_id}: No Anomaly Detected")
+
+                # Delete the previous frame, if it exists
+                if previous_frame_path and os.path.exists(previous_frame_path):
+                    os.remove(previous_frame_path)
+                previous_frame_path = current_frame_path
 
             end_time = time.time()
             processing_time = end_time - start_time
@@ -64,5 +79,9 @@ if video_file:
         cap.release()
         st.success("Video processing completed!")
 
-        # Clean up temporary file
+        # Clean up temporary files and folder
+        if previous_frame_path and os.path.exists(previous_frame_path):
+            os.remove(previous_frame_path)
+        os.rmdir(TEMP_FOLDER)
+
         os.remove(video_path)
