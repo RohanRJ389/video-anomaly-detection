@@ -1,8 +1,9 @@
 import streamlit as st
 import cv2
 import os
-from anomaly_detection import discriminator  # Import the required function
 import time
+from anomaly_detection import discriminator  # Import the required function
+from alerting import send_email_alert_with_latest_image  # Import the alerting function
 
 # Ensure the temporary folder exists
 TEMP_FOLDER = "temp_frames"
@@ -54,6 +55,14 @@ if video_file:
                 prediction = discriminator(frame, fire_detector_state=True)
                 if prediction == 1:
                     alert_placeholder.error(f"Frame {frame_id}: ALERT: Anomaly Detected!")
+                    
+                    # Send email with the latest frame
+                    send_email_alert_with_latest_image(
+                        subject="Anomaly Detected!",
+                        body="An anomaly was detected. Please see the attached image for details.",
+                        to_email="rohanrj389@gmail.com",  # Replace with your email
+                        folder_path=TEMP_FOLDER  # Folder where images are stored
+                    )
                 else:
                     alert_placeholder.success(f"Frame {frame_id}: No Anomaly Detected")
 
