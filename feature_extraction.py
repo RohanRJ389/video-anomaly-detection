@@ -19,7 +19,7 @@ def preprocess_image(frame):
     frame_tensor = torch.from_numpy(frame_normalized).float().permute(2, 0, 1).unsqueeze(0)  # Change shape to (1, 3, 640, 640)
     return frame_tensor
 
-def extract_top_yolo_features(frame, model_path="best.pt", device=device):
+def extract_top_yolo_features(frame, model_path="models/best.pt", device=device):
     """
     Extract YOLO features from a single frame and return them as a numpy array.
 

@@ -38,7 +38,7 @@ def predict_single_input(model, input_features, threshold=0.9, device='cuda'):
     Args:
     - model: Trained LSTM model.
     - input_features: Tensor of shape [6, 9, 10].
-    - threshold: Threshold for classification (default: 0.5).
+    - threshold: Threshold for classification (default: 0.9).
     - device: Device to run the model ('cpu' or 'cuda').
 
     Returns:
@@ -47,20 +47,22 @@ def predict_single_input(model, input_features, threshold=0.9, device='cuda'):
     """
     # Ensure the input is in the correct format
     input_features = torch.stack(input_features).unsqueeze(0)  # Shape: [1, 6, 9, 10]
+    print(f"Shape after stacking: {input_features.shape}")  # Debugging shape
     input_features = input_features.view(1, -1, 10).to(device)  # Reshape: [1, 54, 10]
+    print(f"Shape going into the model: {input_features.shape}")  # Debugging shape
 
     # Forward pass through the model
     with torch.no_grad():
         output = model(input_features)
         probabilities = torch.softmax(output, dim=1).squeeze().tolist()  # Softmax scores
-        print(f"\nprobabilities: {probabilities}\n")
+        print(f"Output probabilities: {probabilities}")
+
         # Use thresholding logic for binary classification
-        print(type(probabilities[0]),type(threshold))
         predicted_class = 1 if probabilities[1] >= threshold else 0  # Binary classification threshold logic
 
     return predicted_class, probabilities
 
-lstm_model_path = "best_for_now.pth" #th your model file path
+lstm_model_path = "models/best_for_now.pth" #th your model file path
 lstm_model = load_model(lstm_model_path, device=device)
 
 def anomaly_detector(frame, window=[], WINDOW_SIZE=6):
@@ -140,7 +142,7 @@ def detect_fire_smoke(frame, model, FIRE_THRESHOLD=0.5, SMOKE_THRESHOLD=0.5):
 # Example usage of detect_fire_smoke in the discriminator
 import time  # Import for timing the processing
 
-fire_model_path = r"fire_smoke.pt"  # Replace with the path to your .pt file
+fire_model_path = r"models/fire_smoke.pt"  # Replace with the path to your .pt file
 fire_model = YOLO(fire_model_path)
 
 
