@@ -3,7 +3,7 @@ import torch
 from feature_extraction import extract_top_yolo_features
 from ultralytics import YOLO
 
-WINDOW_SIZE = 6
+
 
 import torch
 import torch.nn as nn
@@ -63,7 +63,7 @@ def predict_single_input(model, input_features, threshold=0.9, device='cuda'):
 lstm_model_path = "best_for_now.pth" #th your model file path
 lstm_model = load_model(lstm_model_path, device=device)
 
-def anomaly_detector(frame, window=[]):
+def anomaly_detector(frame, window=[], WINDOW_SIZE=6):
     """
     Detect anomalies in a video frame using a sliding window of features.
 
