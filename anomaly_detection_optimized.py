@@ -85,3 +85,4 @@ def discriminator(frame, fire_detector_state):
 
     print(f"Anomaly detection result: {anomaly_result}, Probabilities: {prob}")
     return anomaly_result, prob
+#ignore
